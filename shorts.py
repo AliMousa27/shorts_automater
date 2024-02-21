@@ -5,23 +5,28 @@ from moviepy.editor import AudioFileClip
 import random
 import whisper
 from TikTokTTS.main import tts
+import sys
 
-def cut_video(video_path, clip_length=10):
+
+def cut_video(video_path, video_length):
+        #get the video clip
         clip = VideoFileClip(video_path)
-        random_point = random.randint(0,int(clip.duration-clip_length))
-        clip = clip.subclip(random_point, random_point+clip_length)
+        #get a random point in the video. subtract the clip length to make sure the clip is not out of bounds
+        random_point = random.randint(0,int(clip.duration-video_length))
+        #cut the video where the random poiont starts and add clip length to it
+        clip = clip.subclip(random_point, random_point+video_length)
         return clip
 
 def transcribe_audio(audio_path):
-    #WORDS_INDEX_IN_SEGMENTS_ARRAY = 2
     model = whisper.load_model("base")
-
+    #transcribe the audio and get the word timestamps
     result = model.transcribe(audio=audio_path,word_timestamps=True)
     segments = result['segments']
     subs = []
     for segment in segments:
         for words in segment["words"]:
             subs.append(((words["start"], words["end"]), words["word"]))
+    
     return subs
     
     
@@ -31,20 +36,27 @@ def create_subtitle(subs):
     return SubtitlesClip(subs, generator).set_position(('center'))
 
 def main():
-    text = "Hello zepei, i just wanna let you know that your super fucking gay man. My hog is throbbing. This is so fucking gay i cant do it anymore i wanna kill myself"
-    voice = "en_us_006"
-    #TODO make env var
-    session_id = "30ca901865d6637c66a138dde47e1334"
-    tts(session_id, voice, text, "voice.mp3")
+    if(len(sys.argv) < 2):
+        print("Session_id for the API is required as an argument. Please provide it as an argument.")
+        return
+    AUDIO_FILE_PATH = r"Audio/voice.mp3"
+    # Open the file
+    with open('Texts/text.txt', 'r') as file:
+        # Read the contents and store in a string
+        text = file.read()
+        VOICE = "en_us_006"
+        SESSION_ID = sys.argv[1]
+        #call the api and make a 
+        tts(SESSION_ID, VOICE, text, AUDIO_FILE_PATH)
     
-    clip = cut_video('min.mp4')
-    subtitles = create_subtitle(transcribe_audio("voice.mp3"))
-    
-    audioclip = AudioFileClip("voice.mp3")
+    audioclip = AudioFileClip(AUDIO_FILE_PATH)
+    subtitles = create_subtitle(transcribe_audio(AUDIO_FILE_PATH))
+    print("the length of the video is: ", audioclip.duration)
+    clip = cut_video('Videos/min.mp4',audioclip.duration)
 
     final = CompositeVideoClip([clip, subtitles])
-    final.set_audio(audioclip)
-    final.write_videofile("short.mp4")
+    final = final.set_audio(audioclip)
+    final.write_videofile("Videos/short.mp4")
     final.close()
 
 if __name__ == "__main__": main()
