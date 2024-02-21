@@ -29,34 +29,36 @@ def transcribe_audio(audio_path):
     
     return subs
     
-    
-    
+def get_text(file_path):
+    with open(file_path, 'r') as file:
+        return file.read()
+
+
+def combine_and_write(clip, subtitles, audioclip, output_path):
+    final = CompositeVideoClip([clip, subtitles])
+    final = final.set_audio(audioclip)
+    final.write_videofile(output_path)
+    final.close()
+
 def create_subtitle(subs):
     generator = lambda txt: TextClip(txt, font='Arial-Bold', fontsize=100, color='white')
     return SubtitlesClip(subs, generator).set_position(('center'))
 
+    
 def main():
     if(len(sys.argv) < 2):
         print("Session_id for the API is required as an argument. Please provide it as an argument.")
         return
+    SESSION_ID = sys.argv[1]
+    TEXT = get_text(r'Texts/text.txt')
+    VOICE = "en_us_006"
     AUDIO_FILE_PATH = r"Audio/voice.mp3"
-    # Open the file
-    with open('Texts/text.txt', 'r') as file:
-        # Read the contents and store in a string
-        text = file.read()
-        VOICE = "en_us_006"
-        SESSION_ID = sys.argv[1]
-        #call the api and make a 
-        tts(SESSION_ID, VOICE, text, AUDIO_FILE_PATH)
     
+    tts(SESSION_ID, VOICE, TEXT, AUDIO_FILE_PATH)
     audioclip = AudioFileClip(AUDIO_FILE_PATH)
     subtitles = create_subtitle(transcribe_audio(AUDIO_FILE_PATH))
-    print("the length of the video is: ", audioclip.duration)
     clip = cut_video('Videos/min.mp4',audioclip.duration)
-
-    final = CompositeVideoClip([clip, subtitles])
-    final = final.set_audio(audioclip)
-    final.write_videofile("Videos/short.mp4")
-    final.close()
+    combine_and_write(clip, subtitles, audioclip, "Videos/short.mp4")
 
 if __name__ == "__main__": main()
+
