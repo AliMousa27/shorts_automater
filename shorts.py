@@ -1,23 +1,29 @@
 from moviepy.video.tools.subtitles import SubtitlesClip
 from moviepy.video.io.VideoFileClip import VideoFileClip
 from moviepy.editor import TextClip, CompositeVideoClip
+from moviepy.editor import AudioFileClip
 import random
+import whisper
 from TikTokTTS.main import tts
-
-subs = [((0, 1), "This"),
-        ((1,2), "is"),
-        ((2,3), "a"),
-        ((3,4), "test"),
-        ((4,5), "of"),
-        ((5,6), "the"),
-        ((7,8), "subtitles",)]
-
 
 def cut_video(video_path, clip_length=10):
         clip = VideoFileClip(video_path)
         random_point = random.randint(0,int(clip.duration-clip_length))
         clip = clip.subclip(random_point, random_point+clip_length)
         return clip
+
+def transcribe_audio(audio_path):
+    #WORDS_INDEX_IN_SEGMENTS_ARRAY = 2
+    model = whisper.load_model("base")
+
+    result = model.transcribe(audio=audio_path,word_timestamps=True)
+    segments = result['segments']
+    subs = []
+    for segment in segments:
+        for words in segment["words"]:
+            subs.append(((words["start"], words["end"]), words["word"]))
+    return subs
+    
     
     
 def create_subtitle(subs):
@@ -25,16 +31,20 @@ def create_subtitle(subs):
     return SubtitlesClip(subs, generator).set_position(('center'))
 
 def main():
-    text = "this is just a whole lot of text that is going to be converted to audio"
+    text = "Hello zepei, i just wanna let you know that your super fucking gay man. My hog is throbbing. This is so fucking gay i cant do it anymore i wanna kill myself"
     voice = "en_us_006"
     #TODO make env var
-    session_id = "d005dc431f90cf9f45a5ed5e54d4afed"
+    session_id = "30ca901865d6637c66a138dde47e1334"
     tts(session_id, voice, text, "voice.mp3")
-    '''	clip = cut_video('min.mp4')
-    subtitles = create_subtitle(subs)
-    final = CompositeVideoClip([clip, subtitles])
-    final.write_videofile("short.mp4")
-    final.close()'''
+    
+    clip = cut_video('min.mp4')
+    subtitles = create_subtitle(transcribe_audio("voice.mp3"))
+    
+    audioclip = AudioFileClip("voice.mp3")
 
+    final = CompositeVideoClip([clip, subtitles])
+    final.set_audio(audioclip)
+    final.write_videofile("short.mp4")
+    final.close()
 
 if __name__ == "__main__": main()
