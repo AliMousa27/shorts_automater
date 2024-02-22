@@ -6,7 +6,9 @@ import random
 import whisper
 from TikTokTTS.main import tts
 import sys
-
+from moviepy.editor import ImageClip
+from super_image import EdsrModel, ImageLoader
+from PIL import Image
 
 def cut_video(video_path, video_length):
         #get the video clip
@@ -17,6 +19,8 @@ def cut_video(video_path, video_length):
         clip = clip.subclip(random_point, random_point+video_length)
         return clip
 
+
+
 def transcribe_audio(audio_path,txt):
     model = whisper.load_model("base")
     #transcribe the audio and get the word timestamps
@@ -25,7 +29,6 @@ def transcribe_audio(audio_path,txt):
     subs = []
     split_text = txt.split(' ')
     i = 0
-    print(f"split_text: {split_text}")
     for segment in segments:
         for words in segment["words"]:
             subs.append(((words["start"], words["end"]), split_text[i]))
@@ -37,18 +40,31 @@ def get_text(file_path):
     with open(file_path, 'r') as file:
         return file.read()
 
+def crop_and_center_clip(clip):
+    crop_width = (clip.h * (9 / 16))
+    crop_height = (crop_width * (16 / 9)) 
+    clip_cropped = clip.crop(x_center=clip.w/2, y_center=clip.h/2, width=int(crop_width), height=int(crop_height))
+    return clip_cropped.resize(height=1280)
+
+def get_image(image_path,video_width, duration=5, pos=("center","top")):
+    #upscaling the image. uncomment if the image is not upscaled
+    '''image = Image.open(image_path)
+    model = EdsrModel.from_pretrained('eugenesiow/edsr-base', scale=2)
+    inputs = ImageLoader.load_image(image)
+    preds = model(inputs)
+    ImageLoader.save_image(preds, image_path)'''
+    
+    text_image = ImageClip(image_path).set_start(0).set_duration(duration).set_pos(pos).margin(top=300,opacity=0.0)
+    return text_image.resize(width=int(video_width * 0.9))
+
+
 
 def combine_and_write(clip, subtitles, audioclip, output_path):
-    #crop the video to 9:16 aspect ratio as 9:16 is the ratio for width to height in tiktok
-    crop_width = clip.h * (9 / 16)
-    crop_height = crop_width * (16 / 9)
-    #center the crop
-    clip_cropped = clip.crop(x_center=clip.w/2, y_center=clip.h/2, width=int(crop_width), height=int(crop_height))
-    #resize the video to height of 1280 while maintiang aspect
-    clip_resized = clip_cropped.resize(height=1280) 
-       
-    final = CompositeVideoClip([clip_resized, subtitles])
+    clip = crop_and_center_clip(clip)
+    title = get_image("Images/img.png",clip.w)
+    final = CompositeVideoClip([clip, subtitles,title])
     final = final.set_audio(audioclip)
+    
     final.write_videofile(output_path)
 
     final.close()
