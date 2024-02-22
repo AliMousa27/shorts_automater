@@ -42,7 +42,7 @@ def get_text(file_path):
 
 def crop_and_center_clip(clip):
     crop_width = (clip.h * (9 / 16))
-    crop_height = (crop_width * (16 / 9)) 
+    crop_height = (crop_width * (16 / 9)) - 200
     clip_cropped = clip.crop(x_center=clip.w/2, y_center=clip.h/2, width=int(crop_width), height=int(crop_height))
     return clip_cropped.resize(height=1280)
 
@@ -61,8 +61,8 @@ def get_image(image_path,video_width, duration=5, pos=("center","top")):
 
 def combine_and_write(clip, subtitles, audioclip, output_path):
     clip = crop_and_center_clip(clip)
-    title = get_image("Images/img.png",clip.w)
-    final = CompositeVideoClip([clip, subtitles,title])
+    image = get_image("Images/img.png",clip.w)
+    final = CompositeVideoClip([clip, subtitles,image])
     final = final.set_audio(audioclip)
     
     final.write_videofile(output_path)
@@ -86,7 +86,7 @@ def main():
     tts(SESSION_ID, VOICE, TEXT, AUDIO_FILE_PATH)
     audioclip = AudioFileClip(AUDIO_FILE_PATH)
     subtitles = create_subtitle(transcribe_audio(AUDIO_FILE_PATH,TEXT))
-    clip = cut_video('Videos/min.mp4',audioclip.duration)
-    combine_and_write(clip, subtitles, audioclip, "Videos/short.mp4")
+    clip = cut_video(r'Videos/min.mp4',audioclip.duration)
+    combine_and_write(clip, subtitles, audioclip, r"Videos/short.mp4")
 
 if __name__ == "__main__": main()
