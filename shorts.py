@@ -1,3 +1,5 @@
+from calendar import c
+import re
 from moviepy.video.tools.subtitles import SubtitlesClip
 from moviepy.video.io.VideoFileClip import VideoFileClip
 from moviepy.editor import TextClip, CompositeVideoClip
@@ -10,21 +12,35 @@ from moviepy.editor import ImageClip
 from moviepy.audio.AudioClip import concatenate_audioclips
 
 
-def transcribe_audio(audio_path,txt):
+def transcribe_audio(audio_paths, txt):
     model = whisper.load_model("base")
-    #transcribe the audio and get the word timestamps
-    result = model.transcribe(audio=audio_path,word_timestamps=True)
-    segments = result['segments']
     subs = []
-    split_text = txt.split(' ')
+    split_text = txt.split()
     i = 0
-    for segment in segments:
-        for words in segment["words"]:
-            subs.append(((words["start"], words["end"]), split_text[i]))
-            i+=1
-    
+
+    total_time = 0.0  # Initialize total_time to 0
+
+    for audio_path in audio_paths:
+        # transcribe the audio and get the word timestamps
+        result = model.transcribe(audio=audio_path, word_timestamps=True)
+        segments = result['segments']
+        duration = AudioFileClip(audio_path).duration
+
+        for segment in segments:
+            for words in segment["words"]:
+                # Add total_time to the start and end times
+                if i < len(split_text):
+                    subs.append(((words["start"] + total_time, words["end"] + total_time), split_text[i]))
+                    i += 1
+                else:
+                    subs.append(((words["start"] + total_time, words["end"] + total_time), words["word"]))
+                
+
+        # Add the duration of the current audio file to total_time
+        total_time += duration
+
     return subs
-    
+
 def get_text(file_path):
     with open(file_path, 'r',encoding = "UTF-8") as file:
         return file.read()
@@ -60,6 +76,7 @@ def combine_and_write(clip, subtitles, audioclip, output_path,images):
     final.close()
 
 def create_subtitle(subs):
+
     generator = lambda txt: TextClip(txt, font='Arial-Bold', fontsize=100, color='white')
     return SubtitlesClip(subs, generator).set_position(('center'))
 
@@ -75,23 +92,25 @@ def main():
     VOICE = "en_us_006"
     FINAL_AUDIO_FILE_PATH = r"Audio/voice.mp3"
     img_paths = ["Images/post.png","Images/comment1.png","Images/comment2.png"]
-    
+
     audio_files=[]
+    audio_files_paths=[]
     for i,txt in enumerate(split_text(TEXT)):
         AUDIO_FILE_PATH = f"Audio/voice{i}.mp3"
+        audio_files_paths.append(AUDIO_FILE_PATH)
         tts(SESSION_ID, VOICE, txt, AUDIO_FILE_PATH)
         audio_files.append(AudioFileClip(AUDIO_FILE_PATH))
         
     audioclip = concatenate_audioclips(audio_files)
+    subtitles = create_subtitle(transcribe_audio(audio_files_paths,TEXT))
     
     clip = cut_video(r'Videos/min.mp4',audioclip.duration)
+    
     time = 0
     images=[]
     for img in img_paths:
         images.append(get_image(img,clip.w,time,time+2))
         time += 2
-    
-    subtitles = create_subtitle(transcribe_audio(AUDIO_FILE_PATH,TEXT))
     combine_and_write(clip, subtitles, audioclip, r"Videos/short.mp4",images)
 
 if __name__ == "__main__": main()
