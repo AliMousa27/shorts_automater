@@ -1,4 +1,5 @@
 from calendar import c
+from email.mime import image
 import re
 from moviepy.video.tools.subtitles import SubtitlesClip
 from moviepy.video.io.VideoFileClip import VideoFileClip
@@ -11,39 +12,14 @@ import sys
 from moviepy.editor import ImageClip
 from moviepy.audio.AudioClip import concatenate_audioclips
 
-
-def transcribe_audio(audio_paths, txt):
-    model = whisper.load_model("base")
-    subs = []
-    split_text = txt.split()
-    i = 0
-
-    total_time = 0.0  # Initialize total_time to 0
-
-    for audio_path in audio_paths:
-        # transcribe the audio and get the word timestamps
-        result = model.transcribe(audio=audio_path, word_timestamps=True)
-        segments = result['segments']
-        duration = AudioFileClip(audio_path).duration
-
-        for segment in segments:
-            for words in segment["words"]:
-                # Add total_time to the start and end times
-                if i < len(split_text):
-                    subs.append(((words["start"] + total_time, words["end"] + total_time), split_text[i]))
-                    i += 1
-                else:
-                    subs.append(((words["start"] + total_time, words["end"] + total_time), words["word"]))
-                
-
-        # Add the duration of the current audio file to total_time
-        total_time += duration
-
-    return subs
+END_OF_IMAGE_MARKER = "|"
 
 def get_text(file_path):
     with open(file_path, 'r',encoding = "UTF-8") as file:
         return file.read()
+
+def split_text(text,chunk_size=200):
+    return [text[i:i+chunk_size] for i in range(0, len(text), chunk_size)]
 
 def crop_and_center_clip(clip):
     crop_width = (clip.h * (9 / 16))
@@ -52,36 +28,52 @@ def crop_and_center_clip(clip):
     return clip_cropped.resize(height=1280)
 
 def cut_video(video_path, video_length):
-        #get the video clip
-        clip = VideoFileClip(video_path)
-        #get a random point in the video. subtract the clip length to make sure the clip is not out of bounds
-        random_point = random.randint(0,int(clip.duration-video_length))
-        #cut the video where the random poiont starts and add clip length to it
-        clip = clip.subclip(random_point, random_point+video_length)
-        return crop_and_center_clip(clip)
-    
+    clip = VideoFileClip(video_path)
+    random_point = random.randint(0,int(clip.duration-video_length))
+    clip = clip.subclip(random_point, random_point+video_length)
+    return crop_and_center_clip(clip)
+
 def get_image(image_path,video_width,start,duration, pos=("center","top")):
     img = ImageClip(image_path).set_start(start).set_duration(duration).set_pos(pos).margin(top=300,opacity=0.0)
     img = img.resize(width=int(video_width*0.9))
     return img
 
+def create_subtitle(subs):
+    generator = lambda txt: TextClip(txt, font='Arial-Bold', fontsize=100, color='white')
+    return SubtitlesClip(subs, generator).set_position(('center'))
 
+def transcribe_audio(audio_paths, txt):
+    model = whisper.load_model("base")
+    subs = []
+    split_text = txt.split()
+    i = 0
+    total_time = 0.0
+    image_durations = []
+    image_start=0
+    for audio_path in audio_paths:
+        result = model.transcribe(audio=audio_path, word_timestamps=True)
+        segments = result['segments']
+        duration = AudioFileClip(audio_path).duration
+        for segment in segments:
+            for words in segment["words"]:
+                if i < len(split_text ):
+                    if split_text[i] == END_OF_IMAGE_MARKER:
+                        i += 1
+                        image_durations.append((image_start,words["end"]+total_time))
+                    subs.append(((words["start"] + total_time, words["end"] + total_time), split_text[i]))
+                    i += 1
+                else:
+                    subs.append(((words["start"] + total_time, words["end"] + total_time), words["word"]))
+        total_time += duration
+    #add the last image duration
+    image_durations.append((image_durations[-1][1],total_time))
+    return (subs, image_durations)
 
 def combine_and_write(clip, subtitles, audioclip, output_path,images):
     final = CompositeVideoClip([clip, subtitles]+images)
     final = final.set_audio(audioclip)
-    
     final.write_videofile(output_path)
-
     final.close()
-
-def create_subtitle(subs):
-
-    generator = lambda txt: TextClip(txt, font='Arial-Bold', fontsize=100, color='white')
-    return SubtitlesClip(subs, generator).set_position(('center'))
-
-def split_text(text,chunk_size=200):
-    return [text[i:i+chunk_size] for i in range(0, len(text), chunk_size)]
 
 def main():
     if(len(sys.argv) < 2):
@@ -90,7 +82,6 @@ def main():
     SESSION_ID = sys.argv[1]
     TEXT = get_text(r'Texts/text.txt')
     VOICE = "en_us_006"
-    FINAL_AUDIO_FILE_PATH = r"Audio/voice.mp3"
     img_paths = ["Images/post.png","Images/comment1.png","Images/comment2.png"]
 
     audio_files=[]
@@ -102,15 +93,14 @@ def main():
         audio_files.append(AudioFileClip(AUDIO_FILE_PATH))
         
     audioclip = concatenate_audioclips(audio_files)
-    subtitles = create_subtitle(transcribe_audio(audio_files_paths,TEXT))
-    
+    subtitles, image_durations = transcribe_audio(audio_files_paths, TEXT)
+    subtitles = create_subtitle(subtitles)    
     clip = cut_video(r'Videos/min.mp4',audioclip.duration)
     
     time = 0
     images=[]
-    for img in img_paths:
-        images.append(get_image(img,clip.w,time,time+2))
-        time += 2
+    for img, time in zip(img_paths, image_durations):
+        images.append(get_image(img,clip.w,time[0],time[1]-time[0]))
     combine_and_write(clip, subtitles, audioclip, r"Videos/short.mp4",images)
 
 if __name__ == "__main__": main()
