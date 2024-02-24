@@ -1,6 +1,3 @@
-from calendar import c
-from email.mime import image
-import re
 from moviepy.video.tools.subtitles import SubtitlesClip
 from moviepy.video.io.VideoFileClip import VideoFileClip
 from moviepy.editor import TextClip, CompositeVideoClip
