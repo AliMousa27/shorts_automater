@@ -1,3 +1,5 @@
+from concurrent.futures import thread
+from email.mime import image
 from moviepy.video.tools.subtitles import SubtitlesClip
 from moviepy.video.io.VideoFileClip import VideoFileClip
 from moviepy.editor import TextClip, CompositeVideoClip
@@ -8,12 +10,29 @@ from TikTokTTS.main import tts
 import sys
 from moviepy.editor import ImageClip
 from moviepy.audio.AudioClip import concatenate_audioclips
+from contractions import contractions
+
 
 END_OF_IMAGE_MARKER = "|"
 
+
 def get_text(file_path):
     with open(file_path, 'r',encoding = "UTF-8") as file:
-        return file.read()
+        return normalize_text(file.read())
+
+
+#doesnt work all too well TODO fix 
+def normalize_text(text):
+
+    # Replace contractions
+    for contraction, expansion in contractions.items():
+        text = text.replace(contraction, expansion)
+
+    # Replace slashes with "or"
+    text = text.replace("/", " or ")
+
+    return text
+
 
 def split_text(text,chunk_size=200):
     return [text[i:i+chunk_size] for i in range(0, len(text), chunk_size)]
@@ -57,6 +76,7 @@ def transcribe_audio(audio_paths, txt):
                     if split_text[i] == END_OF_IMAGE_MARKER:
                         i += 1
                         image_durations.append((image_start,words["end"]+total_time))
+                        image_start = words["end"]+total_time #start of the next image
                     subs.append(((words["start"] + total_time, words["end"] + total_time), split_text[i]))
                     i += 1
                 else:
@@ -64,12 +84,22 @@ def transcribe_audio(audio_paths, txt):
         total_time += duration
     #add the last image duration
     image_durations.append((image_durations[-1][1],total_time))
+    print(image_durations)
     return (subs, image_durations)
 
 def combine_and_write(clip, subtitles, audioclip, output_path,images):
     final = CompositeVideoClip([clip, subtitles]+images)
     final = final.set_audio(audioclip)
-    final.write_videofile(output_path)
+    print(f"the video length is {clip.duration}")
+    print(f"the audio length is {audioclip.duration}")
+    print(f"the imgaes total length is {images[-1].duration}")
+    
+    
+    final = final.set_duration(audioclip.duration)
+    #ensure the final duration is the same as the audio duration as the image clips durations get added to the coimposite clip and produce an empty clip  
+    print(f"THE FINAL DURATION IS {final.duration}")
+
+    final.write_videofile(output_path,threads = 8)
     final.close()
 
 def main():
@@ -97,7 +127,8 @@ def main():
     time = 0
     images=[]
     for img, time in zip(img_paths, image_durations):
-        images.append(get_image(img,clip.w,time[0],time[1]-time[0]))
+        images.append(get_image(img,clip.w,time[0],time[1]))
+
     combine_and_write(clip, subtitles, audioclip, r"Videos/short.mp4",images)
 
 if __name__ == "__main__": main()
