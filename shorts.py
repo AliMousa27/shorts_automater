@@ -31,6 +31,7 @@ def normalize_text(text):
 
 
 def split_text(text, chunk_size=200):
+    text = text.replace('\n', ' ')
     words = text.split(' ')
     chunks = []
     chunk = ''
@@ -41,7 +42,6 @@ def split_text(text, chunk_size=200):
             chunks.append(chunk)
             chunk = word
     chunks.append(chunk)
-    print(chunks)
     return chunks
 
 def crop_and_center_clip(clip):
@@ -81,15 +81,12 @@ def transcribe_audio(audio_file_path, txt):
     duration = AudioFileClip(audio_file_path).duration
     for segment in segments:
         for words in segment["words"]:
-            if i < len(split_text ):
-                if split_text[i] == END_OF_IMAGE_MARKER:
-                    i += 1
-                    image_durations.append((image_start,words["end"]+total_time))
-                    image_start = words["end"]+total_time #start of the next image
-                subs.append(((words["start"] + total_time, words["end"] + total_time), split_text[i]))
-                i += 1
-            else:
-                subs.append(((words["start"] + total_time, words["end"] + total_time), words["word"]))
+            if i < len(split_text ) and split_text[i] == END_OF_IMAGE_MARKER:
+                image_durations.append((image_start,words["end"]+total_time))
+                image_start = words["end"]+total_time #start of the next image
+                subs.append(((words["start"] + total_time, words["end"] + total_time),  words["word"]))
+            i += 1
+            subs.append(((words["start"] + total_time, words["end"] + total_time), words["word"]))
     total_time += duration
     image_durations.append((image_durations[-1][1],total_time))
     return (subs, image_durations)
@@ -97,14 +94,9 @@ def transcribe_audio(audio_file_path, txt):
 def combine_and_write(clip, subtitles, audioclip, output_path,images):
     final = CompositeVideoClip([clip, subtitles]+images)
     final = final.set_audio(audioclip)
-    print(f"the video length is {clip.duration}")
-    print(f"the audio length is {audioclip.duration}")
-    print(f"the imgaes total length is {images[-1].duration}")
-    
     
     final = final.set_duration(audioclip.duration)
     #ensure the final duration is the same as the audio duration as the image clips durations get added to the coimposite clip and produce an empty clip  
-    print(f"THE FINAL DURATION IS {final.duration}")
 
     final.write_videofile(output_path,threads = 8)
     final.close()
