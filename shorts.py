@@ -1,5 +1,3 @@
-from concurrent.futures import thread
-from email.mime import image
 from moviepy.video.tools.subtitles import SubtitlesClip
 from moviepy.video.io.VideoFileClip import VideoFileClip
 from moviepy.editor import TextClip, CompositeVideoClip
@@ -24,18 +22,27 @@ def get_text(file_path):
 #doesnt work all too well TODO fix 
 def normalize_text(text):
 
-    # Replace contractions
     for contraction, expansion in contractions.items():
         text = text.replace(contraction, expansion)
 
-    # Replace slashes with "or"
     text = text.replace("/", " or ")
 
     return text
 
 
-def split_text(text,chunk_size=200):
-    return [text[i:i+chunk_size] for i in range(0, len(text), chunk_size)]
+def split_text(text, chunk_size=200):
+    words = text.split(' ')
+    chunks = []
+    chunk = ''
+    for word in words:
+        if len(chunk) + len(word) <= chunk_size:
+            chunk += ' ' + word
+        else:
+            chunks.append(chunk)
+            chunk = word
+    chunks.append(chunk)
+    print(chunks)
+    return chunks
 
 def crop_and_center_clip(clip):
     crop_width = (clip.h * (9 / 16))
@@ -58,7 +65,8 @@ def create_subtitle(subs):
     generator = lambda txt: TextClip(txt, font='Arial-Bold', fontsize=100, color='white')
     return SubtitlesClip(subs, generator).set_position(('center'))
 
-def transcribe_audio(audio_paths, txt):
+
+def transcribe_audio(audio_file_path, txt):
     model = whisper.load_model("base")
     subs = []
     split_text = txt.split()
@@ -66,25 +74,24 @@ def transcribe_audio(audio_paths, txt):
     total_time = 0.0
     image_durations = []
     image_start=0
-    for audio_path in audio_paths:
-        result = model.transcribe(audio=audio_path, word_timestamps=True)
-        segments = result['segments']
-        duration = AudioFileClip(audio_path).duration
-        for segment in segments:
-            for words in segment["words"]:
-                if i < len(split_text ):
-                    if split_text[i] == END_OF_IMAGE_MARKER:
-                        i += 1
-                        image_durations.append((image_start,words["end"]+total_time))
-                        image_start = words["end"]+total_time #start of the next image
-                    subs.append(((words["start"] + total_time, words["end"] + total_time), split_text[i]))
+
+    # Transcribe the concatenated audio
+    result = model.transcribe(audio=audio_file_path, word_timestamps=True)
+    segments = result['segments']
+    duration = AudioFileClip(audio_file_path).duration
+    for segment in segments:
+        for words in segment["words"]:
+            if i < len(split_text ):
+                if split_text[i] == END_OF_IMAGE_MARKER:
                     i += 1
-                else:
-                    subs.append(((words["start"] + total_time, words["end"] + total_time), words["word"]))
-        total_time += duration
-    #add the last image duration
+                    image_durations.append((image_start,words["end"]+total_time))
+                    image_start = words["end"]+total_time #start of the next image
+                subs.append(((words["start"] + total_time, words["end"] + total_time), split_text[i]))
+                i += 1
+            else:
+                subs.append(((words["start"] + total_time, words["end"] + total_time), words["word"]))
+    total_time += duration
     image_durations.append((image_durations[-1][1],total_time))
-    print(image_durations)
     return (subs, image_durations)
 
 def combine_and_write(clip, subtitles, audioclip, output_path,images):
@@ -119,8 +126,11 @@ def main():
         tts(SESSION_ID, VOICE, txt, AUDIO_FILE_PATH)
         audio_files.append(AudioFileClip(AUDIO_FILE_PATH))
         
+    FINAL_AUDIO_PATH = r"Audio/concatenated_audio.mp3"
     audioclip = concatenate_audioclips(audio_files)
-    subtitles, image_durations = transcribe_audio(audio_files_paths, TEXT)
+    
+    audioclip.write_audiofile(FINAL_AUDIO_PATH)
+    subtitles, image_durations = transcribe_audio(FINAL_AUDIO_PATH, TEXT)
     subtitles = create_subtitle(subtitles)    
     clip = cut_video(r'Videos/min.mp4',audioclip.duration)
     
