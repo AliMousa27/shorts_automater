@@ -8,30 +8,22 @@ from TikTokTTS.main import tts
 import sys
 from moviepy.editor import ImageClip
 from moviepy.audio.AudioClip import concatenate_audioclips
-from contractions import contractions
-
+import re
 
 END_OF_IMAGE_MARKER = "|"
 
 
 def get_text(file_path):
     with open(file_path, 'r',encoding = "UTF-8") as file:
-        return normalize_text(file.read())
+        return file.read()
 
 
-#doesnt work all too well TODO fix 
-def normalize_text(text):
-
-    for contraction, expansion in contractions.items():
-        text = text.replace(contraction, expansion)
-
-    text = text.replace("/", " or ")
-
-    return text
 
 
 def split_text(text, chunk_size=200):
-    text = text.replace('\n', ' ')
+    # Remove special characters but keep periods and commas for punctuation
+    text = re.sub('[^A-Za-z0-9., ]+', '', text)
+    print(f"Text: {text}")
     words = text.split(' ')
     chunks = []
     chunk = ''
