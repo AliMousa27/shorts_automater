@@ -1,5 +1,9 @@
+<div align="center">
+   <img src="https://media.tenor.com/s1Y9XfdN08EAAAAi/bot.gif" alt="Bot image">
+</div>
+
 # Purpose 
-This project is intended to automize the video editing aspect of creating TikTok/YouTube shorts where there is a reddit post and a text to speech AI narrating it with subtitle and an image displayed paired with gameplay in the background
+This project aims to streamline the video editing process for creating engaging TikTok/YouTube shorts. It combines Reddit posts, text-to-speech narration, subtitles, and gameplay footage to produce captivating content.
 
 # Scope and Future Features
 The current scope is rather limited but I plan to expand this project and flesh it out. Here are some features that I plan on adding
