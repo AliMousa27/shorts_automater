@@ -14,9 +14,7 @@ The current scope is rather limited but I plan to expand this project and flesh 
 * An autonomous system that fully manages the process of scraping and uploading the product videos to a channel on various platforms
 
 # Sample
-https://github.com/AliMousa27/shorts_automater/assets/114988369/831d1044-0c1d-4b84-b1ed-89d5a76b8d64
-
-**lol**
+https://github.com/AliMousa27/shorts_automater/assets/114988369/1b6dfe56-20c5-4e7a-88fd-e78eaeb62ff8
 
 # Assets Setup
 1. Find a reddit post, copy the post and 1/2 or more comments into the file Assets/Texts/text.txt.
