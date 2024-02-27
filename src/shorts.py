@@ -222,6 +222,7 @@ def main():
     audioclip.write_audiofile(FINAL_AUDIO_PATH)
     #the subtitles currently is a list of tuples of the start and end time of each word and the word itself
     subtitles, image_durations = transcribe_audio(FINAL_AUDIO_PATH, TEXT)
+    print(f"imagedurations: {image_durations}")
     #now the subtitles are a list of subtitle clips
     subtitles = create_subtitle(subtitles)    
 
@@ -230,7 +231,7 @@ def main():
     time = 0
     images : List[ImageClip] = []
     for img, time in zip(img_paths, image_durations):
-        images.append(get_image(img,clip.w,time[0],time[1]))
+        images.append(get_image(img,clip.w,time[0],time[1]-time[0]))
 
     combine_and_write(clip, subtitles, audioclip, r"../Assets/Videos/short.mp4",images)
 
