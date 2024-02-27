@@ -1,6 +1,8 @@
 <div align="center">
-   <img src="https://media.tenor.com/s1Y9XfdN08EAAAAi/bot.gif" alt="Bot image">
+   <img src="https://media.tenor.com/s1Y9XfdN08EAAAAi/bot.gif" alt="Bot Image">
 </div>
+
+
 
 # Purpose 
 This project aims to streamline the video editing process for creating engaging TikTok/YouTube shorts. It combines Reddit posts, text-to-speech narration, subtitles, and gameplay footage to produce captivating content.
