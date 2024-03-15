@@ -7,12 +7,19 @@ def get_post(driver) ->None:
     #shreddit post is the tag name for the post author
     post = driver.find_element(By.TAG_NAME,"shreddit-post")
     assert post is not None, "No post found"
-    content =post.find_element(By.TAG_NAME,"h1").text
-    content += " | "
+    
+    paragraphs = post.find_elements(By.TAG_NAME,"p")
+    content = ""
+    for p in paragraphs:
+        content += p.text + " "
+    
+    content = content.strip()  # Remove trailing whitespace
+    content += " | "  # Add the separator at the end
+    
     post.screenshot(r"Assets/images/+.png")#called it + because its the first and its gonna be before the commetns taht arre 0....comments
     #write the content to the text file
     with open(r"Assets/Texts/text.txt", "a") as file:
-      file.write(content)
+        file.write(content)
     
 def get_comments(driver, comments_to_get: int):
   #https://stackoverflow.com/questions/20986631/how-can-i-scroll-a-web-page-using-selenium-webdriver-in-python
@@ -47,7 +54,7 @@ def get_comments(driver, comments_to_get: int):
 
 def main():
   driver = webdriver.Chrome()
-  driver.get("https://www.reddit.com/r/AskReddit/comments/1benikn/what_invention_was_so_good_that_it_actually_cant/")
+  driver.get("https://www.reddit.com/r/AskReddit/comments/1benjft/what_lifehack_seems_to_be_fake_but_its_a_true/")
   driver.maximize_window()
   get_post(driver)
   get_comments(driver,2)
