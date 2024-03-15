@@ -13,8 +13,8 @@ def get_post(driver) ->None:
     for p in paragraphs:
         content += p.text + " "
     
-    content = content.strip()  # Remove trailing whitespace
-    content += " | "  # Add the separator at the end
+    content = content.strip() 
+    content += " | " 
     
     post.screenshot(r"Assets/images/+.png")#called it + because its the first and its gonna be before the commetns taht arre 0....comments
     #write the content to the text file
@@ -47,6 +47,7 @@ def get_comments(driver, comments_to_get: int):
       print(f"i: {i} comments_written: {comments_written}")
       if content[-1] != '.': content += "."
       if comments_written != comments_to_get: content += " | "
+      content = content.strip() 
       file.write(content)
     i += 1
     
