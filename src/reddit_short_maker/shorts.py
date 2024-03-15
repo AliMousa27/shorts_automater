@@ -2,14 +2,14 @@ from moviepy.video.tools.subtitles import SubtitlesClip
 from moviepy.video.io.VideoFileClip import VideoFileClip
 from moviepy.editor import TextClip, CompositeVideoClip
 from moviepy.editor import AudioFileClip
+import sys
+import os
 import random
 import whisper
 from TikTokTTS.main import tts
-import sys
 from moviepy.editor import ImageClip
 from moviepy.audio.AudioClip import concatenate_audioclips
 from typing import List,Tuple
-import os
 
 END_OF_IMAGE_MARKER = "|"
 
@@ -202,21 +202,21 @@ def main():
         print("Session_id for the API is required as an argument. Please provide it as an argument.")
         return
     SESSION_ID = sys.argv[1]
-    TEXT = get_text(r'../Assets/Texts/text.txt')
+    TEXT = get_text(r'./Assets/Texts/text.txt')
     VOICE = "en_us_006"
 
     
-    img_paths = get_file_paths("../Assets/Images")
+    img_paths = get_file_paths("./Assets/Images")
 
     audio_files : List[AudioFileClip] = []
     audio_files_paths: List[str] = []
     for i,txt in enumerate(split_text(TEXT)):
-        AUDIO_FILE_PATH = f"../Assets/Audio/voice{i}.mp3"
+        AUDIO_FILE_PATH = f"./Assets/Audio/voice{i}.mp3"
         audio_files_paths.append(AUDIO_FILE_PATH)
         tts(SESSION_ID, VOICE, txt, AUDIO_FILE_PATH)
         audio_files.append(AudioFileClip(AUDIO_FILE_PATH))
         
-    FINAL_AUDIO_PATH = r"../Assets/Audio/concatenated_audio.mp3"
+    FINAL_AUDIO_PATH = r"./Assets/Audio/concatenated_audio.mp3"
     audioclip : AudioFileClip = concatenate_audioclips(audio_files)
     
     audioclip.write_audiofile(FINAL_AUDIO_PATH)
@@ -226,13 +226,13 @@ def main():
     #now the subtitles are a list of subtitle clips
     subtitles = create_subtitle(subtitles)    
 
-    clip : VideoFileClip = cut_video(r'../Assets/Videos/min.mp4',audioclip.duration)
+    clip : VideoFileClip = cut_video(r'./Assets/Videos/min.mp4',audioclip.duration)
     
     time = 0
     images : List[ImageClip] = []
     for img, time in zip(img_paths, image_durations):
         images.append(get_image(img,clip.w,time[0],time[1]-time[0]))
 
-    combine_and_write(clip, subtitles, audioclip, r"../Assets/Videos/short.mp4",images)
+    combine_and_write(clip, subtitles, audioclip, r"./Assets/Videos/short.mp4",images)
 
 if __name__ == "__main__": main()
