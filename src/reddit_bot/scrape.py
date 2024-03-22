@@ -7,13 +7,7 @@ def get_post(driver) ->None:
     #shreddit post is the tag name for the post author
     post = driver.find_element(By.TAG_NAME,"shreddit-post")
     assert post is not None, "No post found"
-    
-    paragraphs = post.find_elements(By.TAG_NAME,"p")
-    content = ""
-    for p in paragraphs:
-        content += p.text + " "
-    
-    content = content.strip() 
+    content = post.get_attribute("post-title")  
     content += " | " 
     
     post.screenshot(r"Assets/images/+.png")#called it + because its the first and its gonna be before the commetns taht arre 0....comments
@@ -39,15 +33,17 @@ def get_comments(driver, comments_to_get: int):
     comments[i].screenshot(f"Assets/images/{i}.png")
     content = ""
     for p in comments[i].find_elements(By.TAG_NAME,"p"):
+      print(f"CURRENT COMMENT: {p.text}")
       content += p.text
+      if content[-1] != '.':
+        content+='.'
       content += " "
       
     with open(r"Assets/Texts/text.txt", "a",encoding="UTF-8") as file:
       comments_written += 1
       print(f"i: {i} comments_written: {comments_written}")
-      if content[-1] != '.': content += "."
       if comments_written != comments_to_get: content += " | "
-      content = content.strip() 
+
       file.write(content)
     i += 1
     
@@ -55,7 +51,7 @@ def get_comments(driver, comments_to_get: int):
 
 def main():
   driver = webdriver.Chrome()
-  driver.get("https://www.reddit.com/r/AskReddit/comments/1benjft/what_lifehack_seems_to_be_fake_but_its_a_true/")
+  driver.get("https://www.reddit.com/r/AskReddit/comments/1bk79ba/men_whats_the_most_challenging_aspect_of/")
   driver.maximize_window()
   get_post(driver)
   get_comments(driver,2)

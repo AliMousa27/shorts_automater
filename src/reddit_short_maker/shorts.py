@@ -158,6 +158,7 @@ def transcribe_audio(audio_file_path: str, txt: str):
             subs.append(((words["start"] + total_time, words["end"] + total_time), words["word"]))
     total_time += duration
     image_durations.append((image_durations[-1][1], total_time))
+    print(subs)
     return (subs, image_durations)
 
 def combine_and_write(clip:VideoFileClip, subtitles:SubtitlesClip, audioclip:AudioFileClip, output_path:str, images:List[ImageClip]):
@@ -176,12 +177,12 @@ def combine_and_write(clip:VideoFileClip, subtitles:SubtitlesClip, audioclip:Aud
         None
     """
     #concatante the lists of images and subtitles and the video
-    final = CompositeVideoClip([clip, subtitles] + images)
+    final = CompositeVideoClip([clip] + images + [subtitles])
     final = final.set_audio(audioclip)
     final = final.set_duration(audioclip.duration)
     # Ensure the final duration is the same as the audio duration as the image clips durations get added to the composite clip and produce an empty clip 
     #NOTE: speicfy the threads based on the specs of your system 
-    final.write_videofile(output_path, threads=8)
+    final.write_videofile(output_path, threads=8,preset='ultrafast')
     final.close()
     
 def get_file_paths(directory: str):
