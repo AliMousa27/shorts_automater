@@ -6,6 +6,7 @@ import sys
 import os
 import random
 from numpy import double
+from sympy import true
 import whisper
 from TikTokTTS.main import tts
 from moviepy.editor import ImageClip
@@ -171,6 +172,7 @@ def transcribe_audio(audio_file_path: str, txt: str, add_images=True):
     if add_images:
         image_durations.append((image_durations[-1][1], total_time))
         return (subs, image_durations)
+
     return subs
 
 def combine_and_write(clip:VideoFileClip, subtitles:SubtitlesClip, audioclip:AudioFileClip, output_path:str, images:List[ImageClip]=[]):
@@ -239,23 +241,29 @@ def main():
     TEXT = get_text(r'./Assets/Texts/text.txt')
     VOICE = "en_us_006"
 
-    
-    img_paths = get_file_paths("./Assets/Images")
-
+    try:
+        img_paths = get_file_paths("./Assets/Images")
+    except Exception as e:
+        print(f"Error occurred while getting image paths. ERROR IS {e}")
+        return
     audio_files : List[AudioFileClip] = []
     audio_files_paths: List[str] = []
-    for i,txt in enumerate(split_text(TEXT)):
-        AUDIO_FILE_PATH = f"./Assets/Audio/voice{i}.mp3"
-        audio_files_paths.append(AUDIO_FILE_PATH)
-        tts(SESSION_ID, VOICE, txt, AUDIO_FILE_PATH)
-        audio_files.append(AudioFileClip(AUDIO_FILE_PATH))
-        
+    
+    try:
+        for i,txt in enumerate(split_text(TEXT)):
+            AUDIO_FILE_PATH = f"./Assets/Audio/voice{i}.mp3"
+            audio_files_paths.append(AUDIO_FILE_PATH)
+            tts(SESSION_ID, VOICE, txt, AUDIO_FILE_PATH)
+            audio_files.append(AudioFileClip(AUDIO_FILE_PATH))
+    except Exception as e:
+        print(f"Error using the tiktok api. ERROR IS {e}")
+        return
     FINAL_AUDIO_PATH = r"./Assets/Audio/concatenated_audio.mp3"
     audioclip : AudioFileClip = concatenate_audioclips(audio_files)
     
     audioclip.write_audiofile(FINAL_AUDIO_PATH)
     #the subtitles currently is a list of tuples of the start and end time of each word and the word itself
-    subtitles, image_durations = transcribe_audio(FINAL_AUDIO_PATH, TEXT,False)
+    subtitles, image_durations = transcribe_audio(FINAL_AUDIO_PATH, TEXT)
     print(f"imagedurations: {image_durations}")
     #now the subtitles are a list of subtitle clips
     subtitles = create_subtitle(subtitles)    
