@@ -2,12 +2,17 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from time import sleep
 from selenium.webdriver.chrome.webdriver import WebDriver 
-
+from selenium.webdriver.remote.webelement import WebElement
+from selenium.common.exceptions import NoSuchElementException
 def get_post(driver: WebDriver) ->None:
     #shreddit post is the tag name for the post author
-    post = driver.find_element(By.TAG_NAME,"shreddit-post")
-    assert post is not None, "No post found"
-    content = post.get_attribute("post-title")  
+    try:
+        post: WebElement = driver.find_element(By.TAG_NAME,"shreddit-post")
+    except NoSuchElementException as e:
+      print(f"there is no post: {e}")
+      #TODO: then that means that we have a bunch of paragraphs to get so add code to get them
+      pass
+    content: str = post.get_attribute("post-title")  
     content += " | " 
     
     post.screenshot(r"Assets/images/+.png")#called it + because its the first and its gonna be before the commetns taht arre 0....comments
@@ -51,7 +56,7 @@ def get_comments(driver, comments_to_get: int):
 
 def scrape(url: str):
   assert url is not None, "No url provided"
-  assert url.startswith("https://www.reddit.com/r/"), "The urk needs to be reddit"
+  assert url.startswith("https://www.reddit.com/r/"), "The url needs to be reddit"
   driver = webdriver.Chrome()
   driver.get(url)
   driver.maximize_window()
@@ -60,5 +65,5 @@ def scrape(url: str):
     get_comments(driver,2)
   except Exception as e:
     print(f"Error scraping the post: {e}")
-
+    exit(1)
   
