@@ -5,6 +5,7 @@ from moviepy.editor import AudioFileClip
 import sys
 import os
 import random
+from numpy import double
 import whisper
 from TikTokTTS.main import tts
 from moviepy.editor import ImageClip
@@ -81,9 +82,9 @@ def crop_and_center_clip(clip: VideoFileClip)-> VideoFileClip:
     Returns:
     VideoFileClip: The cropped and centered video clip.
     """
-    crop_width = (clip.h * (9 / 16))
-    crop_height = (crop_width * (16 / 9)) - 200 #200 is offset value 
-    clip_cropped = clip.crop(x_center=clip.w/2, y_center=clip.h/2, width=int(crop_width), height=int(crop_height))
+    crop_width: double = (clip.h * (9 / 16))
+    crop_height: double = (crop_width * (16 / 9)) - 200 #200 is offset value 
+    clip_cropped: VideoFileClip = clip.crop(x_center=clip.w/2, y_center=clip.h/2, width=int(crop_width), height=int(crop_height))
     return clip_cropped.resize(height=1280)
 
 def cut_video(video_path:str, video_length: int) -> VideoFileClip:
@@ -134,7 +135,7 @@ def create_subtitle(subs: str) -> SubtitlesClip:
 
 
 
-def transcribe_audio(audio_file_path: str, txt: str):
+def transcribe_audio(audio_file_path: str, txt: str, add_images=True):
     """
     Transcribes the audio file and extracts word timestamps and image durations.
 
@@ -160,18 +161,19 @@ def transcribe_audio(audio_file_path: str, txt: str):
     duration = AudioFileClip(audio_file_path).duration
     for segment in segments:
         for words in segment["words"]:
-            if i < len(split_text) and split_text[i] == END_OF_IMAGE_MARKER:
+            if i < len(split_text) and split_text[i] == END_OF_IMAGE_MARKER and add_images:
                 image_durations.append((image_start, words["end"] + total_time))
                 image_start = words["end"] + total_time
                 subs.append(((words["start"] + total_time, words["end"] + total_time), words["word"]))
             i += 1
             subs.append(((words["start"] + total_time, words["end"] + total_time), words["word"]))
     total_time += duration
-    image_durations.append((image_durations[-1][1], total_time))
-    print(subs)
-    return (subs, image_durations)
+    if add_images:
+        image_durations.append((image_durations[-1][1], total_time))
+        return (subs, image_durations)
+    return subs
 
-def combine_and_write(clip:VideoFileClip, subtitles:SubtitlesClip, audioclip:AudioFileClip, output_path:str, images:List[ImageClip]):
+def combine_and_write(clip:VideoFileClip, subtitles:SubtitlesClip, audioclip:AudioFileClip, output_path:str, images:List[ImageClip]=[]):
     """
     Combines the given video clip, subtitles, images, and audio clip into a final composite video clip.
     The final composite clip is then written to the specified output path.
@@ -253,7 +255,7 @@ def main():
     
     audioclip.write_audiofile(FINAL_AUDIO_PATH)
     #the subtitles currently is a list of tuples of the start and end time of each word and the word itself
-    subtitles, image_durations = transcribe_audio(FINAL_AUDIO_PATH, TEXT)
+    subtitles, image_durations = transcribe_audio(FINAL_AUDIO_PATH, TEXT,False)
     print(f"imagedurations: {image_durations}")
     #now the subtitles are a list of subtitle clips
     subtitles = create_subtitle(subtitles)    
