@@ -55,7 +55,10 @@ def scrape(url: str):
   driver = webdriver.Chrome()
   driver.get(url)
   driver.maximize_window()
-  get_post(driver)
-  get_comments(driver,2)
+  try:
+    get_post(driver)
+    get_comments(driver,2)
+  except Exception as e:
+    print(f"Error scraping the post: {e}")
 
   
