@@ -14,7 +14,7 @@ from typing import List,Tuple
 import os
 import sys
 #get current dir
-current_dir = os.path.dirname(os.path.abspath(__file__))
+current_dir = os.path.dirname(__file__)
 #get the parent dire by basically cding out
 parent_dir = os.path.dirname(current_dir)
 #insert dependency
