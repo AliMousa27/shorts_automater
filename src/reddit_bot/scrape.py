@@ -1,9 +1,9 @@
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from time import sleep
+from selenium.webdriver.chrome.webdriver import WebDriver 
 
-
-def get_post(driver) ->None:
+def get_post(driver: WebDriver) ->None:
     #shreddit post is the tag name for the post author
     post = driver.find_element(By.TAG_NAME,"shreddit-post")
     assert post is not None, "No post found"
@@ -49,12 +49,13 @@ def get_comments(driver, comments_to_get: int):
     
 
 
-def main():
+def scrape(url: str):
+  assert url is not None, "No url provided"
+  assert url.startswith("https://www.reddit.com/r/"), "The urk needs to be reddit"
   driver = webdriver.Chrome()
-  driver.get("https://www.reddit.com/r/AskReddit/comments/1bk79ba/men_whats_the_most_challenging_aspect_of/")
+  driver.get(url)
   driver.maximize_window()
   get_post(driver)
   get_comments(driver,2)
 
   
-if __name__=="__main__" : main()

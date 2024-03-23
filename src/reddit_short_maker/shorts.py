@@ -11,6 +11,16 @@ from moviepy.editor import ImageClip
 from moviepy.audio.AudioClip import concatenate_audioclips
 from typing import List,Tuple
 
+import os
+import sys
+#get current dir
+current_dir = os.path.dirname(os.path.abspath(__file__))
+#get the parent dire by basically cding out
+parent_dir = os.path.dirname(current_dir)
+#insert dependency
+sys.path.insert(0, parent_dir)
+
+from reddit_bot.scrape import scrape
 END_OF_IMAGE_MARKER = "|"
 
     
@@ -185,6 +195,24 @@ def combine_and_write(clip:VideoFileClip, subtitles:SubtitlesClip, audioclip:Aud
     final.write_videofile(output_path, threads=8,preset='ultrafast')
     final.close()
     
+def cleanup():
+    delete_files_in_directory(r"Assets/Audio")
+    delete_files_in_directory(r"Assets/Images")
+    delete_files_in_directory(r"Assets/Texts")
+
+
+def delete_files_in_directory(directory_path):
+   try:
+     files = os.listdir(directory_path)
+     for file in files:
+       file_path = os.path.join(directory_path, file)
+       if os.path.isfile(file_path):
+         os.remove(file_path)
+     print("All files deleted successfully.")
+   except OSError as e:
+     print(f"Error occurred while deleting files. ERROR IS {e}")
+
+
 def get_file_paths(directory: str):
     """
     Returns a list of file paths in the specified directory.
@@ -199,10 +227,13 @@ def get_file_paths(directory: str):
     return [os.path.join(directory, file) for file in os.listdir(directory) if os.path.isfile(os.path.join(directory, file))]
 
 def main():
-    if(len(sys.argv) < 2):
-        print("Session_id for the API is required as an argument. Please provide it as an argument.")
+    
+    if(len(sys.argv) != 3):
+        print("Session_id for the API is required as an argument and a redidt link as well. Please provide it as an argument.")
         return
     SESSION_ID = sys.argv[1]
+    url = sys.argv[2]
+    scrape(url)
     TEXT = get_text(r'./Assets/Texts/text.txt')
     VOICE = "en_us_006"
 
@@ -235,5 +266,5 @@ def main():
         images.append(get_image(img,clip.w,time[0],time[1]-time[0]))
 
     combine_and_write(clip, subtitles, audioclip, r"./Assets/Videos/short.mp4",images)
-
+    cleanup()
 if __name__ == "__main__": main()
