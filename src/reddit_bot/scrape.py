@@ -42,11 +42,12 @@ def get_post(driver: WebDriver) ->None:
         content = bytes(content, 'utf-8').decode('utf-8', 'ignore')
         file.write(content)
     
-def get_comments(driver, comments_to_get: int):
+def get_comments(driver: WebDriver, comments_to_get: int):
   #https://stackoverflow.com/questions/20986631/how-can-i-scroll-a-web-page-using-selenium-webdriver-in-python
   driver.execute_script("window.scrollBy(0, document.body.scrollHeight);")
   #TODO make it wait instead of sleep
-  sleep(5)
+  driver.implicitly_wait()
+  #sleep(5)
   
   comments_written = 0
   i = 1
@@ -70,6 +71,7 @@ def get_comments(driver, comments_to_get: int):
       comments_written += 1
       print(f"i: {i} comments_written: {comments_written}")
       if comments_written != comments_to_get: content += " | "
+      #turn the string to bytes, then back to a string but ignore chars that cause an error when they arent supported by the encoding format
       content = bytes(content, 'utf-8').decode('utf-8', 'ignore')
       file.write(content)
     i += 1
