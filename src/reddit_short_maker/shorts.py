@@ -6,7 +6,6 @@ import sys
 import os
 import random
 from numpy import double
-from sympy import true
 import whisper
 from TikTokTTS.main import tts
 from moviepy.editor import ImageClip

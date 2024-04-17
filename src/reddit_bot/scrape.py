@@ -4,20 +4,42 @@ from time import sleep
 from selenium.webdriver.chrome.webdriver import WebDriver 
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.common.exceptions import NoSuchElementException
+from typing import List
+from bs4 import BeautifulSoup
+import requests
+def validate_post(url:str):
+  page = requests.get(url)
+  soup = BeautifulSoup(page.content, "html.parser")
+  soup = soup.find("shreddit-post")
+
+  if soup.find(name="shreddit-embed") or soup.find(name="shreddit-player") or soup.find(name="img"):
+    print("Found video or image in the post. Tool is menat ot be used only for text based posts")
+    exit(1)
+
+    
 def get_post(driver: WebDriver) ->None:
     #shreddit post is the tag name for the post author
+    validate_post(driver.current_url)
     try:
         post: WebElement = driver.find_element(By.TAG_NAME,"shreddit-post")
+        
     except NoSuchElementException as e:
       print(f"there is no post: {e}")
-      #TODO: then that means that we have a bunch of paragraphs to get so add code to get them
-      pass
+      exit(1)
+
+
     content: str = post.get_attribute("post-title")  
+    paragraphs: List = post.find_elements(By.TAG_NAME,"p")
+    content +=" ".join([p.text for p in paragraphs])
+    
     content += " | " 
+    print(f"content of the post is {content}")
+    
     
     post.screenshot(r"Assets/images/+.png")#called it + because its the first and its gonna be before the commetns taht arre 0....comments
     #write the content to the text file
     with open(r"Assets/Texts/text.txt", "a") as file:
+        content = content.decode('utf-8','ignore').encode("utf-8")
         file.write(content)
     
 def get_comments(driver, comments_to_get: int):
@@ -48,7 +70,7 @@ def get_comments(driver, comments_to_get: int):
       comments_written += 1
       print(f"i: {i} comments_written: {comments_written}")
       if comments_written != comments_to_get: content += " | "
-
+      content = content.decode('utf-8','ignore').encode("utf-8")
       file.write(content)
     i += 1
     
