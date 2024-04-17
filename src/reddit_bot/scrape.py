@@ -39,7 +39,7 @@ def get_post(driver: WebDriver) ->None:
     post.screenshot(r"Assets/images/+.png")#called it + because its the first and its gonna be before the commetns taht arre 0....comments
     #write the content to the text file
     with open(r"Assets/Texts/text.txt", "a") as file:
-        content = content.decode('utf-8','ignore').encode("utf-8")
+        content = bytes(content, 'utf-8').decode('utf-8', 'ignore')
         file.write(content)
     
 def get_comments(driver, comments_to_get: int):
@@ -70,7 +70,7 @@ def get_comments(driver, comments_to_get: int):
       comments_written += 1
       print(f"i: {i} comments_written: {comments_written}")
       if comments_written != comments_to_get: content += " | "
-      content = content.decode('utf-8','ignore').encode("utf-8")
+      content = bytes(content, 'utf-8').decode('utf-8', 'ignore')
       file.write(content)
     i += 1
     
